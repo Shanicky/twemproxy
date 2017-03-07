@@ -54,6 +54,8 @@
 #define CONF_DEFAULT_SERVER_FAILURE_LIMIT    2
 #define CONF_DEFAULT_SERVER_CONNECTIONS      1
 #define CONF_DEFAULT_KETAMA_PORT             11211
+#define CONF_DEFAULT_REUSE_PORT              false
+#define CONF_DEFAULT_TCPKEEPALIVE            false
 
 struct conf_listen {
     struct string   pname;   /* listen: as "hostname:port" */
@@ -83,6 +85,7 @@ struct conf_pool {
     int                timeout;               /* timeout: */
     int                backlog;               /* backlog: */
     int                client_connections;    /* client_connections: */
+    int                tcpkeepalive;          /* tcpkeepalive: */
     int                redis;                 /* redis: */
     struct string      redis_auth;            /* redis_auth: redis auth password (matches requirepass on redis) */
     int                redis_db;              /* redis_db: redis db */
@@ -91,6 +94,7 @@ struct conf_pool {
     int                server_connections;    /* server_connections: */
     int                server_retry_timeout;  /* server_retry_timeout: in msec */
     int                server_failure_limit;  /* server_failure_limit: */
+    int                reuse_port;            /* reuse_port: */
     struct array       server;                /* servers: conf_server[] */
     unsigned           valid:1;               /* valid? */
 };

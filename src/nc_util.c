@@ -75,6 +75,27 @@ nc_set_reuseaddr(int sd)
     return setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &reuse, len);
 }
 
+
+/*
+(c) Copyright IBM Corp. 2015
+*/
+int
+nc_set_reuseport(int sd)
+{
+#ifdef SO_REUSEPORT
+    int reuse;
+    socklen_t len;
+
+    reuse = 1;
+    len = sizeof(reuse);
+
+    return setsockopt(sd, SOL_SOCKET, SO_REUSEPORT, &reuse, len);
+#else
+    errno = ENOPROTOOPT;
+    return -1;
+#endif
+
+}
 /*
  * Disable Nagle algorithm on TCP socket.
  *
@@ -107,6 +128,13 @@ nc_set_linger(int sd, int timeout)
     len = sizeof(linger);
 
     return setsockopt(sd, SOL_SOCKET, SO_LINGER, &linger, len);
+}
+
+int
+nc_set_tcpkeepalive(int sd)
+{
+    int val = 1;
+    return setsockopt(sd, SOL_SOCKET, SO_KEEPALIVE, &val, sizeof(val));
 }
 
 int

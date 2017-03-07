@@ -56,7 +56,7 @@ fi
 
 %files
 %defattr(-,root,root,-)
-%if 0%{?rhel} == 6
+%if 0%{?rhel} >= 6
 /usr/sbin/nutcracker
 %else
 /usr/bin/nutcracker
@@ -68,6 +68,7 @@ fi
 %changelog
 * Mon Jun 22 2015  Manju Rajashekhar  <manj@cs.stanford.edu>
 - twemproxy: version 0.4.1 release
+- backend server hostnames are resolved lazily
 - redis_auth is only valid for a redis pool
 - getaddrinfo returns non-zero +ve value on error
 - fix-hang-when-command-only (charsyam)
@@ -90,7 +91,7 @@ fi
 - allow null key(empty key) (idning)
 - fix core on invalid mset like "mset a a a" (idning)
 
-* Tue Oct 18 2014 idning <idning@gmail.com>
+* Tue Oct 14 2014 idning <idning@gmail.com>
 - twemproxy: version 0.4.0 release
 - mget improve (idning)
 - many new commands supported: LEX, PFADD, PFMERGE, SORT, PING, QUIT, SCAN... (mattrobenolt, areina, idning)

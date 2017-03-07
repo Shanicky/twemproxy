@@ -74,6 +74,10 @@ static struct command conf_commands[] = {
       conf_set_bool,
       offsetof(struct conf_pool, redis) },
 
+    { string("tcpkeepalive"),
+      conf_set_bool,
+      offsetof(struct conf_pool, tcpkeepalive) },
+
     { string("redis_auth"),
       conf_set_string,
       offsetof(struct conf_pool, redis_auth) },
@@ -101,6 +105,10 @@ static struct command conf_commands[] = {
     { string("server_failure_limit"),
       conf_set_num,
       offsetof(struct conf_pool, server_failure_limit) },
+
+    { string("reuse_port"),
+      conf_set_bool,
+      offsetof(struct conf_pool, reuse_port) },
 
     { string("servers"),
       conf_add_server,
@@ -194,12 +202,14 @@ conf_pool_init(struct conf_pool *cp, struct string *name)
     cp->client_connections = CONF_UNSET_NUM;
 
     cp->redis = CONF_UNSET_NUM;
+    cp->tcpkeepalive = CONF_UNSET_NUM;
     cp->redis_db = CONF_UNSET_NUM;
     cp->preconnect = CONF_UNSET_NUM;
     cp->auto_eject_hosts = CONF_UNSET_NUM;
     cp->server_connections = CONF_UNSET_NUM;
     cp->server_retry_timeout = CONF_UNSET_NUM;
     cp->server_failure_limit = CONF_UNSET_NUM;
+    cp->reuse_port = CONF_UNSET_NUM;
 
     array_null(&cp->server);
 
@@ -281,6 +291,8 @@ conf_pool_each_transform(void *elem, void *data)
     sp->dist_type = cp->distribution;
     sp->hash_tag = cp->hash_tag;
 
+    sp->tcpkeepalive = cp->tcpkeepalive ? 1 : 0;
+
     sp->redis = cp->redis ? 1 : 0;
     sp->timeout = cp->timeout;
     sp->backlog = cp->backlog;
@@ -295,6 +307,7 @@ conf_pool_each_transform(void *elem, void *data)
     sp->server_failure_limit = (uint32_t)cp->server_failure_limit;
     sp->auto_eject_hosts = cp->auto_eject_hosts ? 1 : 0;
     sp->preconnect = cp->preconnect ? 1 : 0;
+    sp->reuse_port = cp->reuse_port ? 1 : 0;
 
     status = server_init(&sp->server, &cp->server, sp);
     if (status != NC_OK) {
@@ -345,6 +358,7 @@ conf_dump(struct conf *cf)
                   cp->server_retry_timeout);
         log_debug(LOG_VVERB, "  server_failure_limit: %d",
                   cp->server_failure_limit);
+        log_debug(LOG_VVERB, "  reuse_port: %d", cp->reuse_port);
 
         nserver = array_n(&cp->server);
         log_debug(LOG_VVERB, "  servers: %"PRIu32"", nserver);
@@ -456,6 +470,9 @@ conf_push_scalar(struct conf *cf)
 
     scalar = cf->event.data.scalar.value;
     scalar_len = (uint32_t)cf->event.data.scalar.length;
+    if (scalar_len == 0) {
+        return NC_ERROR;
+    }
 
     log_debug(LOG_VVERB, "push '%.*s'", scalar_len, scalar);
 
@@ -1228,6 +1245,10 @@ conf_validate_pool(struct conf *cf, struct conf_pool *cp)
         cp->redis = CONF_DEFAULT_REDIS;
     }
 
+    if (cp->tcpkeepalive == CONF_UNSET_NUM) {
+        cp->tcpkeepalive = CONF_DEFAULT_TCPKEEPALIVE;
+    }
+
     if (cp->redis_db == CONF_UNSET_NUM) {
         cp->redis_db = CONF_DEFAULT_REDIS_DB;
     }
@@ -1253,6 +1274,10 @@ conf_validate_pool(struct conf *cf, struct conf_pool *cp)
 
     if (cp->server_failure_limit == CONF_UNSET_NUM) {
         cp->server_failure_limit = CONF_DEFAULT_SERVER_FAILURE_LIMIT;
+    }
+
+    if (cp->reuse_port == CONF_UNSET_NUM) {
+        cp->reuse_port = CONF_DEFAULT_REUSE_PORT;
     }
 
     if (!cp->redis && cp->redis_auth.len > 0) {
@@ -1376,6 +1401,8 @@ conf_create(char *filename)
     return cf;
 
 error:
+    log_stderr("nutcracker: configuration file '%s' syntax is invalid",
+               filename);
     fclose(cf->fh);
     cf->fh = NULL;
     conf_destroy(cf);
